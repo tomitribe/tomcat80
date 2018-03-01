@@ -23,10 +23,13 @@ import javax.annotation.Resource;
 import javax.annotation.Resources;
 import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
+import javax.servlet.ServletSecurityElement;
+import javax.servlet.annotation.ServletSecurity;
 
 import org.apache.catalina.Container;
 import org.apache.catalina.Context;
 import org.apache.catalina.Wrapper;
+import org.apache.catalina.core.ApplicationServletRegistration;
 import org.apache.catalina.util.Introspection;
 import org.apache.tomcat.util.descriptor.web.ContextEnvironment;
 import org.apache.tomcat.util.descriptor.web.ContextResource;
@@ -122,23 +125,35 @@ public class WebAnnotationSet {
                     continue;
                 }
 
-                Class<?> classClass = Introspection.loadClass(context,
+                Class<?> clazz = Introspection.loadClass(context,
                         wrapper.getServletClass());
-                if (classClass == null) {
+                if (clazz == null) {
                     continue;
                 }
 
-                loadClassAnnotation(context, classClass);
-                loadFieldsAnnotation(context, classClass);
-                loadMethodsAnnotation(context, classClass);
+                loadClassAnnotation(context, clazz);
+                loadFieldsAnnotation(context, clazz);
+                loadMethodsAnnotation(context, clazz);
 
                 /* Process RunAs annotation which can be only on servlets.
                  * Ref JSR 250, equivalent to the run-as element in
                  * the deployment descriptor
                  */
-                RunAs annotation = classClass.getAnnotation(RunAs.class);
+                RunAs annotation = clazz.getAnnotation(RunAs.class);
                 if (annotation != null) {
                     wrapper.setRunAs(annotation.value());
+                    RunAs runAs = clazz.getAnnotation(RunAs.class);
+                    if (runAs != null) {
+                        wrapper.setRunAs(runAs.value());
+                    }
+
+                    // Process ServletSecurity annotation
+                    ServletSecurity servletSecurity = clazz.getAnnotation(ServletSecurity.class);
+                    if (servletSecurity != null) {
+                        context.addServletSecurity(
+                                new ApplicationServletRegistration(wrapper, context),
+                                new ServletSecurityElement(servletSecurity));
+                    }
                 }
             }
         }

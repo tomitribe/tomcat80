@@ -900,6 +900,8 @@ public class Tomcat {
                 Context context = (Context) event.getLifecycle();
                 if (event.getType().equals(Lifecycle.CONFIGURE_START_EVENT)) {
                     context.setConfigured(true);
+                    // Process annotations
+                    WebAnnotationSet.loadApplicationAnnotations(context);
                 }
                 // LoginConfig is required to process @ServletSecurity
                 // annotations

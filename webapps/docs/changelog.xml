@@ -112,6 +112,11 @@
         statement proxy is set. This behavior can be changed with
         <code>useStatementFacade</code> attribute. (kfujino)
       </fix>
+      <fix>
+        Process all <code>ServletSecurity</code> annotations at web application
+        start rather than at servlet load time to ensure constraints are applied
+        consistently. (markt)
+      </fix>
     </changelog>
   </subsection>
   <subsection name="Other">
