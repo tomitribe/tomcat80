@@ -799,6 +799,9 @@ public class CorsFilter implements Filter {
                     .parseBoolean(supportsCredentials);
         }
 
+        if (this.supportsCredentials && this.anyOriginAllowed) {
+            throw new ServletException(sm.getString("corsFilter.invalidSupportsCredentials"));
+        }
         if (preflightMaxAge != null) {
             try {
                 if (!preflightMaxAge.isEmpty()) {
@@ -1162,7 +1165,7 @@ public class CorsFilter implements Filter {
     /**
      * By default, all origins are allowed to make requests.
      */
-    public static final String DEFAULT_ALLOWED_ORIGINS = "*";
+    public static final String DEFAULT_ALLOWED_ORIGINS = "";
 
     /**
      * By default, following methods are supported: GET, POST, HEAD and OPTIONS.
@@ -1178,7 +1181,7 @@ public class CorsFilter implements Filter {
     /**
      * By default, support credentials is turned on.
      */
-    public static final String DEFAULT_SUPPORTS_CREDENTIALS = "true";
+    public static final String DEFAULT_SUPPORTS_CREDENTIALS = "false";
 
     /**
      * By default, following headers are supported:
