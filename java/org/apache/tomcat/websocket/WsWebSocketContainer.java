@@ -16,6 +16,28 @@
  */
 package org.apache.tomcat.websocket;
 
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
+import org.apache.tomcat.InstanceManager;
+import org.apache.tomcat.util.codec.binary.Base64;
+import org.apache.tomcat.util.res.StringManager;
+import org.apache.tomcat.websocket.pojo.PojoEndpointClient;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManagerFactory;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.CloseReason;
+import javax.websocket.CloseReason.CloseCodes;
+import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.Extension;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,28 +70,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.TrustManagerFactory;
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.CloseReason;
-import javax.websocket.CloseReason.CloseCodes;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.Extension;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-
-import org.apache.juli.logging.Log;
-import org.apache.juli.logging.LogFactory;
-import org.apache.tomcat.InstanceManager;
-import org.apache.tomcat.util.codec.binary.Base64;
-import org.apache.tomcat.util.res.StringManager;
-import org.apache.tomcat.websocket.pojo.PojoEndpointClient;
 
 public class WsWebSocketContainer
         implements WebSocketContainer, BackgroundProcess {
@@ -353,8 +353,7 @@ public class WsWebSocketContainer
             // Regardless of whether a non-secure wrapper was created for a
             // proxy CONNECT, need to use TLS from this point on so wrap the
             // original AsynchronousSocketChannel
-            SSLEngine sslEngine = createSSLEngine(
-                    clientEndpointConfiguration.getUserProperties());
+            SSLEngine sslEngine = createSSLEngine(clientEndpointConfiguration.getUserProperties(), host, port);
             channel = new AsyncChannelWrapperSecure(socketChannel, sslEngine);
         } else if (channel == null) {
             // Only need to wrap as this point if it wasn't wrapped to process a
@@ -787,7 +786,7 @@ public class WsWebSocketContainer
     }
 
 
-    private SSLEngine createSSLEngine(Map<String,Object> userProperties)
+    private SSLEngine createSSLEngine(Map<String,Object> userProperties, final String host, final int port)
             throws DeploymentException {
 
         try {
@@ -825,7 +824,7 @@ public class WsWebSocketContainer
                 }
             }
 
-            SSLEngine engine = sslContext.createSSLEngine();
+            SSLEngine engine = sslContext.createSSLEngine(host, port);
 
             String sslProtocolsValue =
                     (String) userProperties.get(SSL_PROTOCOLS_PROPERTY);
@@ -834,6 +833,15 @@ public class WsWebSocketContainer
             }
 
             engine.setUseClientMode(true);
+
+            // Enable host verification
+            // Start with current settings (returns a copy)
+            SSLParameters sslParams = engine.getSSLParameters();
+            // Use HTTPS since WebSocket starts over HTTP(S)
+            sslParams.setEndpointIdentificationAlgorithm("HTTPS");
+            // Write the parameters back
+            engine.setSSLParameters(sslParams);
+
 
             return engine;
         } catch (Exception e) {
