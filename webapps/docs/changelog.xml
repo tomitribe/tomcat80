@@ -53,6 +53,14 @@
       </fix>
     </changelog>
   </subsection>
+  <subsection name="WebSocket">
+    <changelog>
+      <fix>
+        Enable host name verification when using TLS with the WebSocket client.
+        (markt)
+      </fix>
+    </changelog>
+  </subsection>
 </section>
 <section name="Tomcat 8.0.43 (violetagg)">
   <subsection name="Catalina">
