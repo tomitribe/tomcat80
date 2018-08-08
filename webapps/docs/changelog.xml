@@ -203,10 +203,6 @@
         <code>o.a.t.websocket.AsyncChannelWrapperSecure</code> are correctly
         reset even if some exceptions occurred during processing. (markt/violetagg)
       </fix>
-      <fix>
-        Enable host name verification when using TLS with the WebSocket client.
-        (markt)
-      </fix>
     </changelog>
   </subsection>
   <subsection name="Web applications">
