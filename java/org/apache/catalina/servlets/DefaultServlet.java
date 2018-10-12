@@ -1035,6 +1035,10 @@ public class DefaultServlet extends HttpServlet {
             location.append('?');
             location.append(request.getQueryString());
         }
+        // Avoid protocol relative redirects
+        while (location.length() > 1 && location.charAt(1) == '/') {
+            location.deleteCharAt(0);
+        }
         response.sendRedirect(response.encodeRedirectURL(location.toString()));
     }
 
