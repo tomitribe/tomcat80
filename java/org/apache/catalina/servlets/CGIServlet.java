@@ -291,6 +291,16 @@ public final class CGIServlet extends HttpServlet {
     private boolean enableCmdLineArguments = true;
 
     /**
+     * Limits the encoded form of individual command line arguments. By default
+     * values are limited to those allowed by the RFC.
+     * See https://tools.ietf.org/html/rfc3875#section-4.4
+     *
+     * Uses \Q...\E to avoid individual quoting.
+     */
+    private Pattern cmdLineArgumentsEncodedPattern =
+            Pattern.compile("[a-zA-Z0-9\\Q%;/?:@&,$-_.!~*'()\\E]+");
+
+    /**
      * Sets instance variables.
      * <P>
      * Modified from Craig R. McClanahan's InvokerServlet
@@ -353,6 +363,11 @@ public final class CGIServlet extends HttpServlet {
         if (getServletConfig().getInitParameter("enableCmdLineArguments") != null) {
             enableCmdLineArguments =
                     Boolean.parseBoolean(config.getInitParameter("enableCmdLineArguments"));
+        }
+
+        if (getServletConfig().getInitParameter("cmdLineArgumentsEncoded") != null) {
+            cmdLineArgumentsEncodedPattern =
+                    Pattern.compile(getServletConfig().getInitParameter("cmdLineArgumentsEncoded"));
         }
     }
 
@@ -640,16 +655,20 @@ public final class CGIServlet extends HttpServlet {
         protected CGIEnvironment(HttpServletRequest req,
                                  ServletContext context) throws IOException {
             setupFromContext(context);
-            setupFromRequest(req);
+            boolean valid = setupFromRequest(req);
 
-            this.valid = setCGIEnvironment(req);
+            if (valid) {
+                valid = setCGIEnvironment(req);
+            }
 
-            if (this.valid) {
+            if (valid) {
                 workingDirectory = new File(command.substring(0,
                       command.lastIndexOf(File.separator)));
             } else {
                 workingDirectory = null;
             }
+
+            this.valid = valid;
         }
 
 
@@ -671,9 +690,13 @@ public final class CGIServlet extends HttpServlet {
          *
          * @param  req   HttpServletRequest for information provided by
          *               the Servlet API
+         *
+         * @return true if the request was parsed without error, false if there
+         *           was a problem
+
          * @throws UnsupportedEncodingException Unknown encoding
          */
-        protected void setupFromRequest(HttpServletRequest req)
+        protected boolean setupFromRequest(HttpServletRequest req)
                 throws UnsupportedEncodingException {
 
             boolean isIncluded = false;
@@ -716,12 +739,22 @@ public final class CGIServlet extends HttpServlet {
                 }
                 if (qs != null && qs.indexOf('=') == -1) {
                     StringTokenizer qsTokens = new StringTokenizer(qs, "+");
-                    while ( qsTokens.hasMoreTokens() ) {
-                        cmdLineParameters.add(URLDecoder.decode(qsTokens.nextToken(),
-                                              parameterEncoding));
+                    while (qsTokens.hasMoreTokens()) {
+                        String encodedArgument = qsTokens.nextToken();
+                        if (!cmdLineArgumentsEncodedPattern.matcher(encodedArgument).matches()) {
+                            if (log.isDebugEnabled()) {
+                                log.debug(sm.getString("cgiServlet.invalidArgumentEncoded",
+                                        encodedArgument, cmdLineArgumentsEncodedPattern.toString()));
+                            }
+                            return false;
+                        }
+                        String decodedArgument = URLDecoder.decode(encodedArgument, parameterEncoding);
+                        cmdLineParameters.add(decodedArgument);
                     }
                 }
             }
+
+            return true;
         }
 
 
