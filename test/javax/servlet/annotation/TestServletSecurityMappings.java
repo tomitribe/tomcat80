@@ -99,7 +99,7 @@ public class TestServletSecurityMappings extends TomcatBaseTest {
         int rc;
 
         // Foo
-        rc = getUrl("http://localhost:" + getPort() + "/test/foo", bc, null);
+        rc = getUrl("http://localhost:" + getPort() + "/test/foo", bc, false);
         if (secureFoo || secureDefault) {
             Assert.assertEquals(403, rc);
         } else {
@@ -108,7 +108,7 @@ public class TestServletSecurityMappings extends TomcatBaseTest {
         bc.recycle();
 
         // Default
-        rc = getUrl("http://localhost:" + getPort() + "/test/something", bc, null);
+        rc = getUrl("http://localhost:" + getPort() + "/test/something", bc, false);
         if (secureDefault) {
             Assert.assertEquals(403, rc);
         } else {
@@ -117,7 +117,7 @@ public class TestServletSecurityMappings extends TomcatBaseTest {
         bc.recycle();
 
         // Root
-        rc = getUrl("http://localhost:" + getPort() + "/test", bc, null);
+        rc = getUrl("http://localhost:" + getPort() + "/test", bc, false);
         if (redirectContextRoot) {
            Assert.assertEquals(302, rc);
         } else {
