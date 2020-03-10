@@ -16,6 +16,7 @@
  */
 package org.apache.coyote.ajp;
 
+import java.net.InetAddress;
 import java.net.Socket;
 
 import org.apache.coyote.AbstractProtocol;
@@ -62,6 +63,7 @@ public class AjpProtocol extends AbstractAjpProtocol<Socket> {
         setSoLinger(Constants.DEFAULT_CONNECTION_LINGER);
         setSoTimeout(Constants.DEFAULT_CONNECTION_TIMEOUT);
         setTcpNoDelay(Constants.DEFAULT_TCP_NO_DELAY);
+        endpoint.setAddress(InetAddress.getLoopbackAddress());
     }
 
 

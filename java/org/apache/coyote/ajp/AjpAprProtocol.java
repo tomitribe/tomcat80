@@ -16,6 +16,8 @@
  */
 package org.apache.coyote.ajp;
 
+import java.net.InetAddress;
+
 import org.apache.coyote.AbstractProtocol;
 import org.apache.coyote.Processor;
 import org.apache.juli.logging.Log;
@@ -68,6 +70,7 @@ public class AjpAprProtocol extends AbstractAjpProtocol<Long> {
         setTcpNoDelay(Constants.DEFAULT_TCP_NO_DELAY);
         // AJP does not use Send File
         ((AprEndpoint) endpoint).setUseSendfile(false);
+        endpoint.setAddress(InetAddress.getLoopbackAddress());
     }
 
 

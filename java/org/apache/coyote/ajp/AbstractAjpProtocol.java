@@ -18,6 +18,8 @@ package org.apache.coyote.ajp;
 
 import java.nio.ByteBuffer;
 
+import java.net.InetAddress;
+
 import org.apache.coyote.AbstractProtocol;
 import org.apache.coyote.Processor;
 import org.apache.coyote.UpgradeToken;
