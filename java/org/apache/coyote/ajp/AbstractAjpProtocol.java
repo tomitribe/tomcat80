@@ -169,14 +169,14 @@ public abstract class AbstractAjpProtocol<S> extends AbstractProtocol<S> {
     }
     
     @Override
-    public void init() throws Exception {
+    public void start() throws Exception {
         if (getSecretRequired()) {
             String secret = getSecret();
             if (secret == null || secret.length() == 0) {
                 throw new IllegalArgumentException(sm.getString("ajpprotocol.nosecret"));
             }
         }
-        super.init();
+        super.start();
     }
 
     protected abstract static class AbstractAjpConnectionHandler<S,P extends AbstractAjpProcessor<S>>
