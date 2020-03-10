@@ -44,6 +44,24 @@
   They eventually become mixed with the numbered issues. (I.e., numbered
   issues do not "pop up" wrt. others).
 -->
+<section name="Tomcat 8.0.43-TT.8">
+  <subsection name="Coyote">
+    <changelog>
+      <update>
+        Change the default bind address for the AJP/1.3 connector to be the
+        loopback address. (markt)
+      </update>
+      <add>
+        Rename the <code>requiredSecret</code> attribute of the AJP/1.3
+        Connector to <code>secret</code> and add a new attribute
+        <code>secretRequired</code> that defaults to <code>true</code>. When
+        <code>secretRequired</code> is <code>true</code> the AJP/1.3 Connector
+        will not start unless the <code>secret</code> attribute is configured to
+        a non-null, non-zero length String. (markt)
+      </add>
+    </changelog>
+  </subsection>
+</section>
 <section name="Tomcat 8.0.43-TT.5">
   <subsection name="Catalina">
     <changelog>
@@ -1218,10 +1236,6 @@
         Update the internal fork of Commons FileUpload to afdedc9. This pulls in
         a fix to improve the performance with large multipart boundaries.
         (markt)
-      </update>
-      <update>
-        Change the default bind address for the AJP/1.3 connector to be the
-        loopback address. (markt)
       </update>
     </changelog>
   </subsection>
