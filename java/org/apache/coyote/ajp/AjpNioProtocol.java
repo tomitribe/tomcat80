@@ -16,6 +16,7 @@
  */
 package org.apache.coyote.ajp;
 
+import java.net.InetAddress;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
@@ -63,6 +64,7 @@ public class AjpNioProtocol extends AbstractAjpProtocol<NioChannel> {
         setTcpNoDelay(Constants.DEFAULT_TCP_NO_DELAY);
         // AJP does not use Send File
         ((NioEndpoint) endpoint).setUseSendfile(false);
+        endpoint.setAddress(InetAddress.getLoopbackAddress());
     }
 
 
