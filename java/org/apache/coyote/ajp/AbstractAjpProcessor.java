@@ -24,9 +24,14 @@ import java.nio.ByteBuffer;
 import java.security.NoSuchProviderException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletResponse;
@@ -85,6 +90,8 @@ public abstract class AbstractAjpProcessor<S> extends AbstractProcessor<S> {
      * Pong message array.
      */
     protected static final byte[] pongMessageArray;
+    
+    private static final Set<String> javaxAttributes;
 
 
     static {
@@ -127,6 +134,14 @@ public abstract class AbstractAjpProcessor<S> extends AbstractProcessor<S> {
         pongMessageArray = new byte[pongMessage.getLen()];
         System.arraycopy(pongMessage.getBuffer(), 0, pongMessageArray,
                 0, pongMessage.getLen());
+
+        // Build the Set of javax attributes
+        Set<String> s = new HashSet<>();
+        s.add("javax.servlet.request.cipher_suite");
+        s.add("javax.servlet.request.key_size");
+        s.add("javax.servlet.request.ssl_session");
+        s.add("javax.servlet.request.X509Certificate");
+        javaxAttributes= Collections.unmodifiableSet(s);
     }
 
 
@@ -261,6 +276,11 @@ public abstract class AbstractAjpProcessor<S> extends AbstractProcessor<S> {
      * Bytes written to client for the current request.
      */
     protected long bytesWritten = 0;
+    
+    private Pattern allowedRequestAttributesPattern;
+    public void setAllowedRequestAttributesPattern(Pattern allowedRequestAttributesPattern) {
+        this.allowedRequestAttributesPattern = allowedRequestAttributesPattern;
+    }
 
 
     // ------------------------------------------------------------ Constructor
@@ -1303,8 +1323,25 @@ public abstract class AbstractAjpProcessor<S> extends AbstractProcessor<S> {
                     }
                 } else if(n.equals(Constants.SC_A_SSL_PROTOCOL)) {
                     request.setAttribute(SSLSupport.PROTOCOL_VERSION_KEY, v);
+                } else if (n.equals("JK_LB_ACTIVATION")) {
+                    request.setAttribute(n, v);
+                } else if (javaxAttributes.contains(n)) {
+                    request.setAttribute(n, v);
                 } else {
-                    request.setAttribute(n, v );
+                	// All 'known' attributes will be processed by the previous
+                    // blocks. Any remaining attribute is an 'arbitrary' one. 
+                    if (allowedRequestAttributesPattern == null) {
+                        response.setStatus(403);
+                        setErrorState(ErrorState.CLOSE_CLEAN, null);
+                    } else {
+                        Matcher m = allowedRequestAttributesPattern.matcher(n);
+                        if (m.matches()) {
+                            request.setAttribute(n, v);
+                        } else {
+                            response.setStatus(403);
+                            setErrorState(ErrorState.CLOSE_CLEAN, null);
+                        }
+                    }
                 }
                 break;
 
