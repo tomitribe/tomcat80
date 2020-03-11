@@ -62,12 +62,12 @@ public class Http11Nio2Processor extends AbstractHttp11Processor<Nio2Channel> {
     // ----------------------------------------------------------- Constructors
 
 
-    public Http11Nio2Processor(int maxHttpHeaderSize, Nio2Endpoint endpoint, int maxTrailerSize,
+    public Http11Nio2Processor(int maxHttpHeaderSize, boolean rejectIllegalHeader, Nio2Endpoint endpoint, int maxTrailerSize,
             Set<String> allowedTrailerHeaders, int maxExtensionSize, int maxSwallowSize) {
 
         super(endpoint);
 
-        inputBuffer = new InternalNio2InputBuffer(request, maxHttpHeaderSize);
+        inputBuffer = new InternalNio2InputBuffer(request, maxHttpHeaderSize, rejectIllegalHeader);
         request.setInputBuffer(inputBuffer);
 
         outputBuffer = new InternalNio2OutputBuffer(response, maxHttpHeaderSize);

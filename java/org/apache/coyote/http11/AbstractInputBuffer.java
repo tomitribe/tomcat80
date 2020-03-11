@@ -109,6 +109,7 @@ public abstract class AbstractInputBuffer<S> implements InputBuffer{
      */
     protected int lastActiveFilter;
 
+    protected boolean rejectIllegalHeader;
 
     // ------------------------------------------------------------- Properties
 

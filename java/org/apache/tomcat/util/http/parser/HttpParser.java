@@ -182,6 +182,15 @@ public class HttpParser {
         }
     }
 
+    public static boolean isControl(int c) {
+        // Fast for valid control characters, slower for some incorrect
+        // ones
+        try {
+            return IS_CONTROL[c];
+        } catch (ArrayIndexOutOfBoundsException ex) {
+            return false;
+        }
+    }
 
     // Skip any LWS and return the next char
     static int skipLws(StringReader input, boolean withReset) throws IOException {

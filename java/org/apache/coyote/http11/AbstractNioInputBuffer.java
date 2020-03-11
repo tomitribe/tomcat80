@@ -76,12 +76,13 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
     /**
      * Alternate constructor.
      */
-    public AbstractNioInputBuffer(Request request, int headerBufferSize) {
+    public AbstractNioInputBuffer(Request request, int headerBufferSize, boolean rejectIllegalHeader) {
 
         this.request = request;
         headers = request.getMimeHeaders();
 
         this.headerBufferSize = headerBufferSize;
+        this.rejectIllegalHeader = rejectIllegalHeader;
 
         filterLibrary = new InputFilter[0];
         activeFilters = new InputFilter[0];
@@ -115,6 +116,8 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
      * leading blank lines.
      */
     protected final int headerBufferSize;
+    
+    protected final boolean rejectIllegalHeader;
 
     /**
      * Known size of the NioChannel read buffer.
@@ -419,6 +422,8 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
         //
 
         byte chr = 0;
+        byte prevChr = 0;
+        
         while (headerParsePos == HeaderParsePosition.HEADER_START) {
 
             // Read new bytes if needed
@@ -429,14 +434,19 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
                 }
             }
 
+            prevChr = chr;
             chr = buf[pos];
 
-            if (chr == Constants.CR) {
-                // Skip
-            } else if (chr == Constants.LF) {
+            if (chr == Constants.CR && prevChr != Constants.CR) {
+                // Possible start of CRLF - process the next byte.
+            } else if (prevChr == Constants.CR && chr == Constants.LF) {
                 pos++;
                 return HeaderParseStatus.DONE;
             } else {
+            	if (prevChr == Constants.CR) {
+                    // Must have read two bytes (first was CR, second was not LF)
+                    pos--;
+                }
                 break;
             }
 
@@ -535,11 +545,22 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
                         }
                     }
 
+                    prevChr = chr;
                     chr = buf[pos];
                     if (chr == Constants.CR) {
-                        // Skip
-                    } else if (chr == Constants.LF) {
+                        // Possible start of CRLF - process the next byte.
+                    } else if (prevChr == Constants.CR && chr == Constants.LF) {
                         eol = true;
+                    } else if (prevChr == Constants.CR) {
+                        // Invalid value
+                        // Delete the header (it will be the most recent one)
+                        headers.removeHeader(headers.size() - 1);
+                        return skipLine();
+                    } else if (chr != Constants.HT && HttpParser.isControl(chr)) {
+                        // Invalid value
+                        // Delete the header (it will be the most recent one)
+                        headers.removeHeader(headers.size() - 1);
+                        return skipLine();
                     } else if (chr == Constants.SP || chr == Constants.HT) {
                         buf[headerData.realPos] = chr;
                         headerData.realPos++;
@@ -595,6 +616,9 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
     private HeaderParseStatus skipLine() throws IOException {
         headerParsePos = HeaderParsePosition.HEADER_SKIPLINE;
         boolean eol = false;
+        
+        byte chr = 0;
+        byte prevChr = 0;
 
         // Reading bytes until the end of the line
         while (!eol) {
@@ -606,9 +630,12 @@ public abstract class AbstractNioInputBuffer<S> extends AbstractInputBuffer<S> {
                 }
             }
 
-            if (buf[pos] == Constants.CR) {
+            prevChr = chr;
+            chr = buf[pos];
+
+            if (chr == Constants.CR) {
                 // Skip
-            } else if (buf[pos] == Constants.LF) {
+            } else if (prevChr == Constants.CR && chr == Constants.LF) {
                 eol = true;
             } else {
                 headerData.lastSignificantChar = pos;

@@ -47,8 +47,8 @@ public class InternalNioInputBuffer extends AbstractNioInputBuffer<NioChannel> {
     /**
      * Alternate constructor.
      */
-    public InternalNioInputBuffer(Request request, int headerBufferSize) {
-        super(request, headerBufferSize);
+    public InternalNioInputBuffer(Request request, int headerBufferSize, boolean rejectIllegalHeader) {
+        super(request, headerBufferSize, rejectIllegalHeader);
         inputStreamInputBuffer = new SocketInputBuffer();
     }
 
